@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🐍 Snake Game com Ranking</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      background-color: #e3f2fd;
+      margin: 0;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #2e7d32;
+    }
+
+    canvas {
+      background-color: #212121;
+      display: block;
+      margin: 0 auto;
+      border: 3px solid #4caf50;
+      border-radius: 8px;
+    }
+
+    .score-container {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+
+    .ranking {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+
+    ol {
+      padding-left: 20px;
+      text-align: left;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      font-size: 16px;
+      border: 2px solid #4caf50;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    #gameContainer {
+      display: none;
+    }
+
+    #confettiCanvas {
+      position: absolute;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐍 Snake Game</h1>
+
+  <div id="startMenu">
+    <p>Digite seu nome para começar:</p>
+    <input type="text" id="playerName" placeholder="Seu nome">
+    <br>
+    <button onclick="startGame()">Começar Jogo</button>
+  </div>
+
+  <div id="gameContainer">
+    <div class="score-container">
+      <p>Pontos: <span id="score">0</span></p>
+    </div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <canvas id="confettiCanvas" width="400" height="400"></canvas>
+  </div>
+
+  <div class="ranking">
+    <h2>🏆 Ranking (Top 50)</h2>
+    <ol id="rankingList"></ol>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const confettiCanvas = document.getElementById("confettiCanvas");
+    const confettiCtx = confettiCanvas.getContext("2d");
+
+    const box = 20;
+    const canvasSize = 400;
+    let snake = [{ x: 200, y: 200 }];
+    let direction = "right";
+    let food = generateFood();
+    let score = 0;
+    let game;
+    let playerName = "";
+
+    const confettiParticles = [];
+
+    document.addEventListener("keydown", changeDirection);
+    updateRankingDisplay();
+
+    function startGame() {
+      const nameInput = document.getElementById("playerName").value.trim();
+      if (!nameInput) {
+        alert("Por favor, insira seu nome.");
+        return;
+      }
+      playerName = nameInput;
+      document.getElementById("startMenu").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      resetGame();
+      game = setInterval(draw, 150); // velocidade reduzida
+    }
+
+    function resetGame() {
+      snake = [{ x: 200, y: 200 }];
+      direction = "right";
+      food = generateFood();
+      score = 0;
+      document.getElementById("score").innerText = score;
+    }
+
+    function changeDirection(event) {
+      const key = event.key;
+      if (key === "ArrowUp" && direction !== "down") direction = "up";
+      else if (key === "ArrowDown" && direction !== "up") direction = "down";
+      else if (key === "ArrowLeft" && direction !== "right") direction = "left";
+      else if (key === "ArrowRight" && direction !== "left") direction = "right";
+    }
+
+    function generateFood() {
+      return {
+        x: Math.floor(Math.random() * (canvasSize / box)) * box,
+        y: Math.floor(Math.random() * (canvasSize / box)) * box
+      };
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Desenha a cobrinha
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#a5d6a7" : "#66bb6a";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Desenha a comida
+      ctx.fillStyle = "#ef5350";
+      ctx.beginPath();
+      ctx.arc(food.x + box / 2, food.y + box / 2, box / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Movimenta
+      let head = { x: snake[0].x, y: snake[0].y };
+      if (direction === "right") head.x += box;
+      if (direction === "left") head.x -= box;
+      if (direction === "up") head.y -= box;
+      if (direction === "down") head.y += box;
+
+      if (
+        head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize ||
+        collision(head, snake)
+      ) {
+        clearInterval(game);
+        alert("Game Over! " + playerName + ", você fez " + score + " pontos.");
+        updateRanking(playerName, score);
+        return;
+      }
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        document.getElementById("score").innerText = score;
+        food = generateFood();
+        triggerConfetti();
+      } else {
+        snake.pop();
+      }
+
+      snake.unshift(head);
+      animateConfetti();
+    }
+
+    function collision(head, array) {
+      return array.slice(1).some(seg => seg.x === head.x && seg.y === head.y);
+    }
+
+    function updateRanking(name, newScore) {
+      const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+      ranking.push({ name, score: newScore });
+      ranking.sort((a, b) => b.score - a.score);
+      const top50 = ranking.slice(0, 50);
+      localStorage.setItem("ranking", JSON.stringify(top50));
+      updateRankingDisplay();
+    }
+
+    function updateRankingDisplay() {
+      const rankingList = document.getElementById("rankingList");
+      const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+      rankingList.innerHTML = "";
+      ranking.forEach((entry, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}º - ${entry.name}: ${entry.score} pts`;
+        rankingList.appendChild(li);
+      });
+    }
+
+    // Confete visual
+    function triggerConfetti() {
+      for (let i = 0; i < 30; i++) {
+        confettiParticles.push({
+          x: Math.random() * canvas.width,
+          y: 0,
+          size: Math.random() * 6 + 4,
+          speed: Math.random() * 3 + 2,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+          alpha: 1
+        });
+      }
+    }
+
+    function animateConfetti() {
+      confettiCtx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach((p, index) => {
+        p.y += p.speed;
+        p.alpha -= 0.02;
+        confettiCtx.fillStyle = p.color;
+        confettiCtx.globalAlpha = p.alpha;
+        confettiCtx.beginPath();
+        confettiCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        confettiCtx.fill();
+      });
+      confettiCtx.globalAlpha = 1;
+      // Remove invisíveis
+      for (let i = confettiParticles.length - 1; i >= 0; i--) {
+        if (confettiParticles[i].alpha <= 0) {
+          confettiParticles.splice(i, 1);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
