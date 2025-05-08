@@ -1,273 +1,282 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🐍 Snake Game com Ranking</title>
+  <meta charset="UTF-8">
+  <title>Jogo da Cobrinha Educativa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      background-color: #e3f2fd;
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 20px;
-      overflow-x: hidden;
+      padding: 0;
+      font-family: Arial, sans-serif;
     }
 
-    h1 {
-      margin-bottom: 10px;
-      color: #2e7d32;
+    body {
+      background-color: #111;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
     }
 
-    canvas {
-      background-color: #212121;
-      display: block;
-      margin: 0 auto;
-      border: 3px solid #4caf50;
-      border-radius: 8px;
+    .game-container {
+      width: 600px;
+      max-width: 90vw;
+      height: 600px;
+      max-height: 90vw;
+      background: #222;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      position: relative;
     }
 
-    .score-container {
+    .snake {
+      background: var(--snake-color, #4FC3F7);
+      border-radius: 4px;
+    }
+
+    .food {
+      background: #FF5252;
+      border-radius: 50%;
+    }
+
+    .question {
       font-size: 18px;
-      margin: 10px 0;
+      margin-bottom: 10px;
+      text-align: center;
     }
 
-    .ranking {
-      margin-top: 20px;
-      max-height: 200px;
-      overflow-y: auto;
-      max-width: 300px;
-      margin-left: auto;
-      margin-right: auto;
-      background-color: #ffffff;
-      border-radius: 8px;
+    .scoreboard {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    #gameOverScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      display: none;
+      z-index: 10;
+    }
+
+    #gameOverScreen input, #gameOverScreen select {
+      margin: 10px;
       padding: 10px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.1);
-      font-size: 14px;
+      font-size: 16px;
     }
 
-    ol {
-      padding-left: 20px;
+    #ranking {
+      margin-top: 20px;
       text-align: left;
     }
 
-    input[type="text"] {
-      padding: 8px;
-      font-size: 16px;
-      border: 2px solid #4caf50;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 8px 16px;
-      font-size: 16px;
-      background-color: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #388e3c;
-    }
-
-    #gameContainer {
-      display: none;
-    }
-
-    #confettiCanvas {
-      position: absolute;
-      pointer-events: none;
+    #confetti {
+      position: fixed;
       top: 0;
       left: 0;
-      z-index: 999;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
-  <h1>🐍 Snake Game</h1>
 
-  <div id="startMenu">
-    <p>Digite seu nome para começar:</p>
-    <input type="text" id="playerName" placeholder="Seu nome">
-    <br>
-    <button onclick="startGame()">Começar Jogo</button>
+  <div class="question" id="questionText"></div>
+
+  <div class="game-container" id="gameContainer"></div>
+
+  <div class="scoreboard">
+    <span id="score">Pontos: 0</span>
+    <span id="lives"> | Vidas: 3</span>
   </div>
 
-  <div id="gameContainer">
-    <div class="score-container">
-      <p>Pontos: <span id="score">0</span></p>
-    </div>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <canvas id="confettiCanvas" width="400" height="400"></canvas>
+  <div id="gameOverScreen">
+    <h2>Game Over!</h2>
+    <p>Sua pontuação: <span id="finalScore"></span></p>
+    <input type="text" id="playerName" placeholder="Digite seu nome" />
+    <select id="colorPicker">
+      <option value="#4FC3F7">Azul</option>
+      <option value="#4CAF50">Verde</option>
+      <option value="#FFEB3B">Amarelo</option>
+      <option value="#FF9800">Laranja</option>
+      <option value="#E91E63">Rosa</option>
+    </select>
+    <select id="emojiPicker">
+      <option value="🐍">🐍</option>
+      <option value="🐸">🐸</option>
+      <option value="👑">👑</option>
+      <option value="😎">😎</option>
+      <option value="🧠">🧠</option>
+    </select>
+    <button onclick="saveScore()">Salvar e ver ranking</button>
+    <div id="ranking"></div>
   </div>
 
-  <div class="ranking">
-    <h2>🏆 Ranking (Top 50)</h2>
-    <ol id="rankingList"></ol>
-  </div>
+  <canvas id="confetti"></canvas>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    const gameContainer = document.getElementById("gameContainer");
+    const scoreEl = document.getElementById("score");
+    const livesEl = document.getElementById("lives");
+    const questionText = document.getElementById("questionText");
 
-    const confettiCanvas = document.getElementById("confettiCanvas");
-    const confettiCtx = confettiCanvas.getContext("2d");
+    const questions = [
+      { q: "Qual a média dos números: 2, 4, 6?", a: "4", options: ["3", "4", "5", "6"] },
+      { q: "Qual a moda: 3, 3, 4, 5?", a: "3", options: ["2", "3", "4", "5"] },
+      { q: "Qual a mediana: 1, 3, 5?", a: "3", options: ["1", "3", "5", "4"] },
+      { q: "Qual a média: 10, 20?", a: "15", options: ["10", "15", "20", "25"] },
+      { q: "Moda: 2, 2, 2, 3, 4?", a: "2", options: ["2", "3", "4", "5"] },
+      { q: "Mediana: 7, 9, 11?", a: "9", options: ["7", "9", "11", "10"] },
+      { q: "Média: 5, 10, 15?", a: "10", options: ["5", "10", "15", "20"] },
+      { q: "Moda: 1, 1, 2, 3?", a: "1", options: ["1", "2", "3", "4"] },
+      { q: "Mediana: 2, 4, 6, 8, 10?", a: "6", options: ["4", "5", "6", "7"] },
+      { q: "Média: 4, 6, 8, 10?", a: "7", options: ["6", "7", "8", "9"] }
+    ];
 
-    const box = 20;
-    const canvasSize = 400;
-    let snake = [{ x: 200, y: 200 }];
-    let direction = "right";
-    let food = generateFood();
+    let currentQuestionIndex = 0;
+    let snake = [{ x: 10, y: 10 }];
+    let foodItems = [];
+    let direction = { x: 0, y: 0 };
     let score = 0;
-    let game;
-    let playerName = "";
+    let lives = 3;
+    let emoji = "🐍";
 
-    const confettiParticles = [];
+    function drawGame() {
+      gameContainer.innerHTML = '';
 
-    document.addEventListener("keydown", changeDirection);
-    updateRankingDisplay();
+      foodItems.forEach(food => {
+        const foodDiv = document.createElement("div");
+        foodDiv.className = "food";
+        foodDiv.style.gridColumnStart = food.x;
+        foodDiv.style.gridRowStart = food.y;
+        foodDiv.innerText = food.value;
+        foodDiv.style.display = "flex";
+        foodDiv.style.justifyContent = "center";
+        foodDiv.style.alignItems = "center";
+        gameContainer.appendChild(foodDiv);
+      });
 
-    function startGame() {
-      const nameInput = document.getElementById("playerName").value.trim();
-      if (!nameInput) {
-        alert("Por favor, insira seu nome.");
-        return;
-      }
-      playerName = nameInput;
-      document.getElementById("startMenu").style.display = "none";
-      document.getElementById("gameContainer").style.display = "block";
-      resetGame();
-      game = setInterval(draw, 150); // velocidade reduzida
+      snake.forEach((segment, i) => {
+        const s = document.createElement("div");
+        s.className = "snake";
+        s.style.gridColumnStart = segment.x;
+        s.style.gridRowStart = segment.y;
+        if (i === 0) s.innerText = emoji;
+        gameContainer.appendChild(s);
+      });
     }
 
-    function resetGame() {
-      snake = [{ x: 200, y: 200 }];
-      direction = "right";
-      food = generateFood();
-      score = 0;
-      document.getElementById("score").innerText = score;
+    function placeFood() {
+      const current = questions[currentQuestionIndex];
+      foodItems = current.options.map(value => ({
+        x: Math.floor(Math.random() * 20) + 1,
+        y: Math.floor(Math.random() * 20) + 1,
+        value
+      }));
     }
 
-    function changeDirection(event) {
-      const key = event.key;
-      if (key === "ArrowUp" && direction !== "down") direction = "up";
-      else if (key === "ArrowDown" && direction !== "up") direction = "down";
-      else if (key === "ArrowLeft" && direction !== "right") direction = "left";
-      else if (key === "ArrowRight" && direction !== "left") direction = "right";
-    }
+    function update() {
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-    function generateFood() {
-      return {
-        x: Math.floor(Math.random() * (canvasSize / box)) * box,
-        y: Math.floor(Math.random() * (canvasSize / box)) * box
-      };
-    }
+      if (head.x < 1 || head.x > 20 || head.y < 1 || head.y > 20) return gameOver();
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      snake.unshift(head);
 
-      // Desenha a cobrinha
-      for (let i = 0; i < snake.length; i++) {
-        ctx.fillStyle = i === 0 ? "#a5d6a7" : "#66bb6a";
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
-      }
-
-      // Desenha a comida
-      ctx.fillStyle = "#ef5350";
-      ctx.beginPath();
-      ctx.arc(food.x + box / 2, food.y + box / 2, box / 2 - 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Movimenta
-      let head = { x: snake[0].x, y: snake[0].y };
-      if (direction === "right") head.x += box;
-      if (direction === "left") head.x -= box;
-      if (direction === "up") head.y -= box;
-      if (direction === "down") head.y += box;
-
-      if (
-        head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize ||
-        collision(head, snake)
-      ) {
-        clearInterval(game);
-        alert("Game Over! " + playerName + ", você fez " + score + " pontos.");
-        updateRanking(playerName, score);
-        return;
-      }
-
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        document.getElementById("score").innerText = score;
-        food = generateFood();
-        triggerConfetti();
+      const hit = foodItems.find(f => f.x === head.x && f.y === head.y);
+      if (hit) {
+        if (hit.value === questions[currentQuestionIndex].a) {
+          showConfetti();
+          score += 10;
+          scoreEl.textContent = "Pontos: " + score;
+          currentQuestionIndex++;
+          if (currentQuestionIndex >= questions.length) return gameOver();
+          questionText.innerText = questions[currentQuestionIndex].q;
+          placeFood();
+        } else {
+          lives--;
+          livesEl.textContent = " | Vidas: " + lives;
+          if (lives <= 0) return gameOver();
+        }
       } else {
         snake.pop();
       }
 
-      snake.unshift(head);
-      animateConfetti();
+      drawGame();
     }
 
-    function collision(head, array) {
-      return array.slice(1).some(seg => seg.x === head.x && seg.y === head.y);
+    function gameOver() {
+      clearInterval(gameLoop);
+      document.getElementById("gameOverScreen").style.display = "flex";
+      document.getElementById("finalScore").innerText = score;
     }
 
-    function updateRanking(name, newScore) {
-      const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-      ranking.push({ name, score: newScore });
+    function saveScore() {
+      const name = document.getElementById("playerName").value.trim();
+      if (!name) return alert("Digite seu nome!");
+      const color = document.getElementById("colorPicker").value;
+      emoji = document.getElementById("emojiPicker").value;
+      document.documentElement.style.setProperty('--snake-color', color);
+      const ranking = JSON.parse(localStorage.getItem("ranking") || "[]");
+      ranking.push({ name, score });
       ranking.sort((a, b) => b.score - a.score);
-      const top50 = ranking.slice(0, 50);
-      localStorage.setItem("ranking", JSON.stringify(top50));
-      updateRankingDisplay();
+      localStorage.setItem("ranking", JSON.stringify(ranking.slice(0, 50)));
+      showRanking();
     }
 
-    function updateRankingDisplay() {
-      const rankingList = document.getElementById("rankingList");
-      const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-      rankingList.innerHTML = "";
-      ranking.forEach((entry, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${index + 1}º - ${entry.name}: ${entry.score} pts`;
-        rankingList.appendChild(li);
-      });
+    function showRanking() {
+      const rankingDiv = document.getElementById("ranking");
+      const ranking = JSON.parse(localStorage.getItem("ranking") || "[]");
+      rankingDiv.innerHTML = "<h3>Ranking</h3><ol>" +
+        ranking.map(p => `<li>${p.name}: ${p.score}</li>`).join("") +
+        "</ol>";
     }
 
-    // Confete visual
-    function triggerConfetti() {
-      for (let i = 0; i < 30; i++) {
-        confettiParticles.push({
-          x: Math.random() * canvas.width,
-          y: 0,
-          size: Math.random() * 6 + 4,
-          speed: Math.random() * 3 + 2,
-          color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-          alpha: 1
+    function showConfetti() {
+      const duration = 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      const interval = setInterval(function () {
+        if (Date.now() > animationEnd) return clearInterval(interval);
+        confetti({
+          particleCount: 100,
+          origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 },
+          ...defaults
         });
-      }
+      }, 200);
     }
 
-    function animateConfetti() {
-      confettiCtx.clearRect(0, 0, canvas.width, canvas.height);
-      confettiParticles.forEach((p, index) => {
-        p.y += p.speed;
-        p.alpha -= 0.02;
-        confettiCtx.fillStyle = p.color;
-        confettiCtx.globalAlpha = p.alpha;
-        confettiCtx.beginPath();
-        confettiCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        confettiCtx.fill();
-      });
-      confettiCtx.globalAlpha = 1;
-      // Remove invisíveis
-      for (let i = confettiParticles.length - 1; i >= 0; i--) {
-        if (confettiParticles[i].alpha <= 0) {
-          confettiParticles.splice(i, 1);
-        }
-      }
-    }
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -1 };
+      else if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 1 };
+      else if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -1, y: 0 };
+      else if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 1, y: 0 };
+    });
+
+    const confettiScript = document.createElement("script");
+    confettiScript.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js";
+    document.head.appendChild(confettiScript);
+
+    questionText.innerText = questions[0].q;
+    placeFood();
+    drawGame();
+    const gameLoop = setInterval(update, 200);
   </script>
 </body>
 </html>
