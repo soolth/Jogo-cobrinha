@@ -20,30 +20,25 @@
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 10px;
     }
 
-    .setup-container {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 20px;
+    .setup-container, .question, .scoreboard, #gameOverScreen, #ranking {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
       border-radius: 10px;
-      margin-bottom: 20px;
+      margin: 10px 0;
       text-align: center;
     }
 
     .setup-container select, .setup-container button, .setup-container input {
       padding: 10px;
-      margin: 10px;
+      margin: 5px;
       font-size: 18px;
-      border-radius: 5px;
     }
 
     .question {
       font-size: 24px;
-      margin: 20px 0;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 10px;
-      border-radius: 10px;
     }
 
     .game-container {
@@ -73,46 +68,21 @@
       align-items: center;
     }
 
-    .scoreboard, #lives {
-      font-size: 20px;
-      margin-top: 10px;
-      text-align: center;
-    }
-
-    #gameOverScreen {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      display: none;
-      flex-direction: column;
+    #controls {
+      display: flex;
       justify-content: center;
-      align-items: center;
-      z-index: 10;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    #ranking {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    #rankingButton, #leftBtn, #rightBtn, #upBtn, #downBtn {
-      position: fixed;
-      background: #2196F3;
+    .control-button {
+      padding: 20px;
+      font-size: 20px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.3);
       color: white;
-      border: none;
-      padding: 12px 16px;
-      font-size: 18px;
-      border-radius: 8px;
-      z-index: 100;
-      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+      border: 2px solid white;
     }
-    #rankingButton { bottom: 20px; right: 20px; }
-    #leftBtn { bottom: 70px; left: 20px; }
-    #rightBtn { bottom: 70px; left: 120px; }
-    #upBtn { bottom: 120px; left: 70px; }
-    #downBtn { bottom: 20px; left: 70px; }
   </style>
 </head>
 <body>
@@ -137,33 +107,36 @@
     <button onclick="startGame()">Iniciar Jogo</button>
   </div>
 
-  <div class="question" id="questionText" style="display: none;">Pergunta aqui...</div>
-  <div class="game-container" id="gameContainer" style="display: none;"></div>
-  <div class="scoreboard"><span id="score">Pontos: 0</span> | <span id="lives">Vidas: 3</span></div>
+  <div class="question" id="questionText" style="display:none;"></div>
+  <div class="game-container" id="gameContainer" style="display:none;"></div>
 
-  <div id="gameOverScreen">
+  <div class="scoreboard">
+    <span id="score">Pontos: 0</span> | <span id="lives">Vidas: 3</span>
+  </div>
+
+  <div id="controls">
+    <button class="control-button" onclick="mobileMove('up')">⬆️</button>
+    <button class="control-button" onclick="mobileMove('left')">⬅️</button>
+    <button class="control-button" onclick="mobileMove('down')">⬇️</button>
+    <button class="control-button" onclick="mobileMove('right')">➡️</button>
+  </div>
+
+  <div id="gameOverScreen" style="display:none;">
     <h2>Game Over!</h2>
     <p>Sua pontuação: <span id="finalScore"></span></p>
     <button onclick="saveScore()">Salvar ranking</button>
-    <button onclick="restartGame()">Jogar Novamente</button>
-    <div id="ranking"></div>
-    <br>
+    <br><br>
     <a id="whatsappShare" href="#" target="_blank">Compartilhar no WhatsApp</a>
+    <div id="ranking"></div>
   </div>
 
-  <button id="rankingButton" onclick="toggleRanking()">Ver Ranking</button>
-  <button id="leftBtn" onclick="direction = {x: -1, y: 0}">◀</button>
-  <button id="rightBtn" onclick="direction = {x: 1, y: 0}">▶</button>
-  <button id="upBtn" onclick="direction = {x: 0, y: -1}">▲</button>
-  <button id="downBtn" onclick="direction = {x: 0, y: 1}">▼</button>
-
   <script>
-    let snake = [{ x: 10, y: 10 }];
+    let snake = [{x: 10, y: 10}];
     let food = [];
-    let direction = { x: 0, y: 0 };
-    let gameLoop;
+    let direction = {x: 0, y: 0};
     let score = 0;
     let lives = 3;
+    let gameLoop;
     let currentQuestionIndex = 0;
     let snakeColor = "#4FC3F7";
     let snakeEmoji = "😀";
@@ -180,55 +153,73 @@
       document.getElementById("setup").style.display = "none";
       document.getElementById("questionText").style.display = "block";
       document.getElementById("gameContainer").style.display = "grid";
+      localStorage.removeItem("ranking");
       resetGame();
     }
 
     function resetGame() {
       score = 0;
       lives = 3;
-      snake = [{ x: 10, y: 10 }];
-      direction = { x: 0, y: 0 };
+      snake = [{x: 10, y: 10}];
+      direction = {x: 0, y: 0};
       currentQuestionIndex = 0;
       updateScore();
       placeFood();
       drawGame();
-      if (gameLoop) clearInterval(gameLoop);
+      document.addEventListener("keydown", handleKey);
+      clearInterval(gameLoop);
       gameLoop = setInterval(update, 200);
     }
 
+    function handleKey(e) {
+      if (e.key === "ArrowUp") direction = {x: 0, y: -1};
+      else if (e.key === "ArrowDown") direction = {x: 0, y: 1};
+      else if (e.key === "ArrowLeft") direction = {x: -1, y: 0};
+      else if (e.key === "ArrowRight") direction = {x: 1, y: 0};
+    }
+
+    function mobileMove(dir) {
+      if (dir === 'up') direction = {x: 0, y: -1};
+      if (dir === 'down') direction = {x: 0, y: 1};
+      if (dir === 'left') direction = {x: -1, y: 0};
+      if (dir === 'right') direction = {x: 1, y: 0};
+    }
+
     function placeFood() {
-      const options = questions[currentQuestionIndex].options;
-      const spots = [];
-      for (let opt of options) {
+      const opts = questions[currentQuestionIndex].options;
+      const newFood = [];
+      opts.forEach(opt => {
         let pos;
         do {
-          pos = { x: Math.floor(Math.random() * 20) + 1, y: Math.floor(Math.random() * 20) + 1 };
+          pos = {x: Math.floor(Math.random() * 20) + 1, y: Math.floor(Math.random() * 20) + 1};
         } while (snake.some(s => s.x === pos.x && s.y === pos.y));
-        spots.push({ ...pos, value: opt });
-      }
-      food = spots;
+        newFood.push({...pos, value: opt});
+      });
+      food = newFood;
       document.getElementById("questionText").innerText = questions[currentQuestionIndex].q;
     }
 
     function drawGame() {
       const container = document.getElementById("gameContainer");
       container.innerHTML = "";
+
       food.forEach(f => {
-        const d = document.createElement("div");
-        d.className = "food";
-        d.style.gridColumnStart = f.x;
-        d.style.gridRowStart = f.y;
-        d.innerText = f.value;
-        container.appendChild(d);
+        const el = document.createElement("div");
+        el.className = "food";
+        el.style.gridColumnStart = f.x;
+        el.style.gridRowStart = f.y;
+        el.innerText = f.value;
+        container.appendChild(el);
       });
+
       snake.forEach((s, i) => {
-        const d = document.createElement("div");
-        d.className = "snake";
-        d.style.gridColumnStart = s.x;
-        d.style.gridRowStart = s.y;
-        d.style.background = snakeColor;
-        if (i === 0) d.innerText = snakeEmoji;
-        container.appendChild(d);
+        const el = document.createElement("div");
+        el.className = "snake";
+        el.style.gridColumnStart = s.x;
+        el.style.gridRowStart = s.y;
+        el.style.background = snakeColor;
+        el.innerText = i === 0 ? snakeEmoji : "";
+        container.appendChild(el);
       });
     }
 
@@ -238,12 +229,12 @@
     }
 
     function update() {
-      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-      if (head.x < 1 || head.x > 20 || head.y < 1 || head.y > 20) return endGame();
+      const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+      if (head.x < 1 || head.y < 1 || head.x > 20 || head.y > 20) return endGame();
 
-      const foodHit = food.find(f => f.x === head.x && f.y === head.y);
-      if (foodHit) {
-        if (foodHit.value === questions[currentQuestionIndex].a) {
+      const eaten = food.find(f => f.x === head.x && f.y === head.y);
+      if (eaten) {
+        if (eaten.value === questions[currentQuestionIndex].a) {
           score += 10;
           snake.unshift(head);
           currentQuestionIndex++;
@@ -263,11 +254,10 @@
 
     function endGame() {
       clearInterval(gameLoop);
-      document.getElementById("gameOverScreen").style.display = "flex";
+      document.getElementById("gameOverScreen").style.display = "block";
       document.getElementById("finalScore").innerText = score;
-      const text = `Joguei o Snake Math e fiz ${score} pontos! 🐍 Jogue também:`;
-      const link = "https://soolth.github.io/Jogo-cobrinha/";
-      document.getElementById("whatsappShare").href = `https://wa.me/?text=${encodeURIComponent(text + " " + link)}`;
+      const text = encodeURIComponent(`Joguei o Jogo da Cobrinha Educativa e fiz ${score} pontos! 🐍 https://soolth.github.io/Jogo-cobrinha/`);
+      document.getElementById("whatsappShare").href = `https://wa.me/?text=${text}`;
     }
 
     function saveScore() {
@@ -286,21 +276,6 @@
       rankingDiv.innerHTML = "<h3>Ranking (Top 50)</h3><ol>" +
         ranking.map(p => `<li>${p.name}: ${p.score}</li>`).join("") +
         "</ol>";
-    }
-
-    function restartGame() {
-      document.getElementById("gameOverScreen").style.display = "none";
-      startGame();
-    }
-
-    function toggleRanking() {
-      const rankingDiv = document.getElementById("ranking");
-      if (rankingDiv.style.display === "block") {
-        rankingDiv.style.display = "none";
-      } else {
-        showRanking();
-        rankingDiv.style.display = "block";
-      }
     }
   </script>
 </body>
