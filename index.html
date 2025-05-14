@@ -1,282 +1,378 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake Math</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jogo da Velha - Moda, Média e Mediana</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
     body {
-      background: url('https://img.freepik.com/fotos-premium/fundo-da-natureza-com-grama-e-ceu-azul_744040-1503.jpg') no-repeat center center fixed;
-      background-size: cover;
-      color: #fff;
+      font-family: 'Arial', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
-      padding: 10px;
+      background: linear-gradient(to right, #d0ffd4, #81ee7d);
+      margin: 0;
+      padding: 20px;
     }
-
-    .setup-container, .question, .scoreboard, #gameOverScreen, #ranking {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 10px;
-      border-radius: 10px;
-      margin: 10px 0;
+    h1 {
+      color: #199935;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      margin-bottom: 40px;
+    }
+    #playerNames {
+      margin-bottom: 20px;
       text-align: center;
     }
-
-    .setup-container select, .setup-container button, .setup-container input {
-      padding: 10px;
-      margin: 5px;
-      font-size: 18px;
+    #playerNames span {
+      font-weight: bold;
+      color: #8b1414;
+    }
+    #confirmNames {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #00aeff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
-    .question {
-      font-size: 24px;
+    #confirmNames:hover{
+      background-color: #006eff;
+
     }
 
-    .game-container {
-      width: 90vmin;
-      height: 90vmin;
+    .board {
       display: grid;
-      grid-template-columns: repeat(20, 1fr);
-      grid-template-rows: repeat(20, 1fr);
-      position: relative;
-      background-color: rgba(0, 0, 0, 0.5);
-      border: 2px solid #fff;
-    }
-
-    .snake {
-      border-radius: 4px;
-      text-align: center;
-      font-size: 20px;
-    }
-
-    .food {
-      background: #FF5252;
-      border-radius: 50%;
-      text-align: center;
-      font-size: 16px;
-      display: flex;
+      grid-template-columns: repeat(3, 100px);
+      gap: 5px;
+      margin-bottom: 20px;
       justify-content: center;
       align-items: center;
+      transform: scale(1.1);
     }
-
-    #controls {
+    .cell {
+      width: 100px;
+      height: 100px;
+      background-color: #fff;
+      border: 2px solid #008f40;
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .control-button {
-      padding: 20px;
-      font-size: 20px;
+      font-size: 2em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       border-radius: 10px;
-      background: rgba(255,255,255,0.3);
+    }
+    .cell:hover {
+      background-color: #bbf8d2;
+      transform: scale(1.05);
+    }
+    #questionBox {
+      display: none;
+      background: #fff;
+      border: 2px solid #278f52;
+      padding: 15px;
+      width: 300px;
+      text-align: center;
+      border-radius: 8px;
+    }
+    #questionBox h3 {
+      color: #79d654;
+    }
+    .option {
+      background: #93d8c3;
+      border: none;
+      padding: 10px;
+      margin: 5px;
+      width: 100%;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+    .option:hover {
+      background: #d1c4e9;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #1b9a65;
+      font-size: 1.2em;
+    }
+    #ranking, #controls {
+      margin-top: 20px;
+      width: 300px;
+      text-align: center;
+    }
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+    #controls button {
+      background: #24aa72;
       color: white;
-      border: 2px solid white;
+      padding: 8px 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="setup-container" id="setup">
-    <h2>Personalize sua cobrinha</h2>
-    <input type="text" id="playerName" placeholder="Digite seu nome">
-    <label for="color">Cor:</label>
-    <select id="color">
-      <option value="#4FC3F7">Azul</option>
-      <option value="#81C784">Verde</option>
-      <option value="#FFB74D">Laranja</option>
-      <option value="#E57373">Vermelho</option>
-    </select>
-    <label for="emoji">Emoji da cabeça:</label>
-    <select id="emoji">
-      <option value="😀">😀</option>
-      <option value="😎">😎</option>
-      <option value="🐍">🐍</option>
-      <option value="👑">👑</option>
-      <option value="🤖">🤖</option>
-    </select>
-    <button onclick="startGame()">Iniciar Jogo</button>
+  <h1>Jogo da Velha ✨ Estatística</h1>
+
+  <div id="playerNames">
+    Jogador X: <input type="text" id="playerXName" placeholder="Digite o nome do Jogador 1" required><br/>
+    Jogador O: <input type="text" id="playerOName" placeholder="Digite o nome do Jogador 2" required><br/>
+    <button id="confirmNames">Confirmar Nomes</button>
   </div>
 
-  <div class="question" id="questionText" style="display:none;"></div>
-  <div class="game-container" id="gameContainer" style="display:none;"></div>
+  <div class="board" id="board"></div>
 
-  <div class="scoreboard">
-    <span id="score">Pontos: 0</span> | <span id="lives">Vidas: 3</span>
+  <div id="questionBox">
+    <h3 id="questionText"></h3>
+    <div id="options"></div>
   </div>
 
-  <div id="controls">
-    <button class="control-button" onclick="mobileMove('up')">⬆️</button>
-    <button class="control-button" onclick="mobileMove('left')">⬅️</button>
-    <button class="control-button" onclick="mobileMove('down')">⬇️</button>
-    <button class="control-button" onclick="mobileMove('right')">➡️</button>
+  <div id="status"></div>
+
+  <div id="controls" class="hidden">
+    <button onclick="compartilharWhatsapp()">📱 Compartilhar no WhatsApp</button><br />
+    <button onclick="reiniciarJogo()">🔄 Reiniciar Jogo</button>
   </div>
 
-  <div id="gameOverScreen" style="display:none;">
-    <h2>Game Over!</h2>
-    <p>Sua pontuação: <span id="finalScore"></span></p>
-    <button onclick="saveScore()">Salvar ranking</button>
-    <br><br>
-    <a id="whatsappShare" href="#" target="_blank">Compartilhar no WhatsApp</a>
-    <div id="ranking"></div>
+  <div id="ranking">
+    <h3>🏆 Ranking de Duplas</h3>
+    <ul id="rankingList"></ul>
   </div>
 
   <script>
-    let snake = [{x: 10, y: 10}];
-    let food = [];
-    let direction = {x: 0, y: 0};
-    let score = 0;
-    let lives = 3;
-    let gameLoop;
-    let currentQuestionIndex = 0;
-    let snakeColor = "#4FC3F7";
-    let snakeEmoji = "😀";
+    const board = document.getElementById("board");
+    const questionBox = document.getElementById("questionBox");
+    const questionText = document.getElementById("questionText");
+    const optionsDiv = document.getElementById("options");
+    const statusDiv = document.getElementById("status");
+    const rankingList = document.getElementById("rankingList");
+    const controlsDiv = document.getElementById("controls");
+    const confirmBtn = document.getElementById("confirmNames");
+
+    let currentPlayer = "X";
+    let gameState = Array(9).fill(null);
+    let players = { X: "", O: "" };  // Inicialmente sem nomes
+    let scores = { X: 0, O: 0 };
+    let currentCellIndex = null;
+    let usedQuestions = [];
 
     const questions = [
-      { q: "Qual a média dos números: 2, 4, 6?", a: "4", options: ["3", "4", "5"] },
-      { q: "Qual a moda: 3, 3, 4, 5?", a: "3", options: ["4", "3", "5"] },
-      { q: "Qual a mediana: 1, 3, 5?", a: "3", options: ["3", "1", "5"] },
+      {
+        question: "Qual é a moda de [2, 3, 3, 5, 7]?",
+        options: ["3", "5", "2"],
+        answer: "3"
+      },
+      {
+        question: "Qual é a média de [4, 6, 8]?",
+        options: ["6", "5", "7"],
+        answer: "6"
+      },
+      {
+        question: "Qual é a mediana de [1, 3, 3, 6, 7, 8, 9]?",
+        options: ["6", "3", "7"],
+        answer: "6"
+      },
+      {
+        question: "Qual é a moda de [1, 1, 2, 4, 4, 4, 5]?",
+        options: ["4", "1", "5"],
+        answer: "4"
+      },
+      {
+        question: "Qual é a média de [10, 15, 20]?",
+        options: ["15", "18", "12"],
+        answer: "15"
+      },
+      {
+        question: "Qual é a mediana de [2, 3, 5, 8, 9]?",
+        options: ["5", "3", "8"],
+        answer: "5"
+      },
+      {
+        question: "Qual é a moda de [6, 6, 6, 7, 8, 9]?",
+        options: ["6", "7", "9"],
+        answer: "6"
+      },
+      {
+        question: "Qual é a média de [1, 2, 3, 4, 5]?",
+        options: ["3", "2", "4"],
+        answer: "3"
+      },
+      {
+        question: "Qual é a mediana de [3, 5, 7, 9, 11]?",
+        options: ["7", "9", "5"],
+        answer: "7"
+      },
+      {
+        question: "Qual é a moda de [2, 2, 4, 4, 6, 6]?",
+        options: ["Não existe", "2", "6"],
+        answer: "Não existe"
+      }
     ];
 
-    function startGame() {
-      snakeColor = document.getElementById("color").value;
-      snakeEmoji = document.getElementById("emoji").value;
-      document.getElementById("setup").style.display = "none";
-      document.getElementById("questionText").style.display = "block";
-      document.getElementById("gameContainer").style.display = "grid";
-      localStorage.removeItem("ranking");
-      resetGame();
-    }
-
-    function resetGame() {
-      score = 0;
-      lives = 3;
-      snake = [{x: 10, y: 10}];
-      direction = {x: 0, y: 0};
-      currentQuestionIndex = 0;
-      updateScore();
-      placeFood();
-      drawGame();
-      document.addEventListener("keydown", handleKey);
-      clearInterval(gameLoop);
-      gameLoop = setInterval(update, 200);
-    }
-
-    function handleKey(e) {
-      if (e.key === "ArrowUp") direction = {x: 0, y: -1};
-      else if (e.key === "ArrowDown") direction = {x: 0, y: 1};
-      else if (e.key === "ArrowLeft") direction = {x: -1, y: 0};
-      else if (e.key === "ArrowRight") direction = {x: 1, y: 0};
-    }
-
-    function mobileMove(dir) {
-      if (dir === 'up') direction = {x: 0, y: -1};
-      if (dir === 'down') direction = {x: 0, y: 1};
-      if (dir === 'left') direction = {x: -1, y: 0};
-      if (dir === 'right') direction = {x: 1, y: 0};
-    }
-
-    function placeFood() {
-      const opts = questions[currentQuestionIndex].options;
-      const newFood = [];
-      opts.forEach(opt => {
-        let pos;
-        do {
-          pos = {x: Math.floor(Math.random() * 20) + 1, y: Math.floor(Math.random() * 20) + 1};
-        } while (snake.some(s => s.x === pos.x && s.y === pos.y));
-        newFood.push({...pos, value: opt});
-      });
-      food = newFood;
-      document.getElementById("questionText").innerText = questions[currentQuestionIndex].q;
-    }
-
-    function drawGame() {
-      const container = document.getElementById("gameContainer");
-      container.innerHTML = "";
-
-      food.forEach(f => {
-        const el = document.createElement("div");
-        el.className = "food";
-        el.style.gridColumnStart = f.x;
-        el.style.gridRowStart = f.y;
-        el.innerText = f.value;
-        container.appendChild(el);
-      });
-
-      snake.forEach((s, i) => {
-        const el = document.createElement("div");
-        el.className = "snake";
-        el.style.gridColumnStart = s.x;
-        el.style.gridRowStart = s.y;
-        el.style.background = snakeColor;
-        el.innerText = i === 0 ? snakeEmoji : "";
-        container.appendChild(el);
-      });
-    }
-
-    function updateScore() {
-      document.getElementById("score").innerText = "Pontos: " + score;
-      document.getElementById("lives").innerText = "Vidas: " + lives;
-    }
-
-    function update() {
-      const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
-      if (head.x < 1 || head.y < 1 || head.x > 20 || head.y > 20) return endGame();
-
-      const eaten = food.find(f => f.x === head.x && f.y === head.y);
-      if (eaten) {
-        if (eaten.value === questions[currentQuestionIndex].a) {
-          score += 10;
-          snake.unshift(head);
-          currentQuestionIndex++;
-          if (currentQuestionIndex >= questions.length) return endGame();
-          placeFood();
-        } else {
-          lives--;
-          if (lives <= 0) return endGame();
-        }
-        updateScore();
-      } else {
-        snake.pop();
-        snake.unshift(head);
+    function createBoard() {
+      board.innerHTML = "";
+      gameState = Array(9).fill(null);
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleCellClick);
+        board.appendChild(cell);
       }
-      drawGame();
+      statusDiv.textContent = `Vez de: ${players[currentPlayer]} (${currentPlayer})`;
+      controlsDiv.classList.add("hidden");
+      usedQuestions = [];
     }
 
-    function endGame() {
-      clearInterval(gameLoop);
-      document.getElementById("gameOverScreen").style.display = "block";
-      document.getElementById("finalScore").innerText = score;
-      const text = encodeURIComponent(`Joguei o Jogo da Cobrinha Educativa e fiz ${score} pontos! 🐍 https://soolth.github.io/Jogo-cobrinha/`);
-      document.getElementById("whatsappShare").href = `https://wa.me/?text=${text}`;
+    function handleCellClick(e) {
+      const index = e.target.dataset.index;
+      if (gameState[index] || questionBox.style.display === "block") return;
+
+      currentCellIndex = index;
+      showQuestion();
     }
 
-    function saveScore() {
-      const name = document.getElementById("playerName").value.trim();
-      if (!name) return alert("Digite seu nome!");
-      const ranking = JSON.parse(localStorage.getItem("ranking") || "[]");
-      ranking.push({ name, score });
-      ranking.sort((a, b) => b.score - a.score);
-      localStorage.setItem("ranking", JSON.stringify(ranking.slice(0, 50)));
-      showRanking();
+    function showQuestion() {
+      let question;
+      do {
+        question = questions[Math.floor(Math.random() * questions.length)];
+      } while (usedQuestions.includes(question) && usedQuestions.length < questions.length);
+
+      usedQuestions.push(question);
+      questionText.textContent = question.question;
+      optionsDiv.innerHTML = "";
+
+      question.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.classList.add("option");
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(option, question.answer);
+        optionsDiv.appendChild(btn);
+      });
+
+      questionBox.style.display = "block";
     }
 
-    function showRanking() {
-      const rankingDiv = document.getElementById("ranking");
-      const ranking = JSON.parse(localStorage.getItem("ranking") || "[]");
-      rankingDiv.innerHTML = "<h3>Ranking (Top 50)</h3><ol>" +
-        ranking.map(p => `<li>${p.name}: ${p.score}</li>`).join("") +
-        "</ol>";
+    function checkAnswer(selected, correct) {
+      questionBox.style.display = "none";
+      if (selected === correct) {
+        gameState[currentCellIndex] = currentPlayer;
+        document.querySelectorAll(".cell")[currentCellIndex].textContent = currentPlayer;
+        if (checkWin()) {
+          scores[currentPlayer]++;
+          statusDiv.textContent = `${players[currentPlayer]} (${currentPlayer}) venceu!`;
+          updateRanking();
+          controlsDiv.classList.remove("hidden");
+        } else if (gameState.every(cell => cell)) {
+          scores.X++;
+          scores.O++;
+          statusDiv.textContent = "Empate!";
+          updateRanking();
+          controlsDiv.classList.remove("hidden");
+        } else {
+          currentPlayer = currentPlayer === "X" ? "O" : "X";
+          statusDiv.textContent = `Vez de: ${players[currentPlayer]} (${currentPlayer})`;
+        }
+      } else {
+        statusDiv.textContent = `${players[currentPlayer]} errou! Vez do outro jogador.`;
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        statusDiv.textContent += ` Agora é a vez de ${players[currentPlayer]} (${currentPlayer})`;
+      }
     }
+
+    function checkWin() {
+      const winCombos = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return winCombos.some(combo =>
+        combo.every(index => gameState[index] === currentPlayer)
+      );
+    }
+
+    function updateRanking() {
+      const dupla = `${players["X"]} & ${players["O"]}: X (${scores.X}) - O (${scores.O})`;
+      const listItem = document.createElement("li");
+      listItem.textContent = dupla;
+      rankingList.appendChild(listItem);
+    }
+
+    function reiniciarJogo() {
+      scores = { X: 0, O: 0 };
+      createBoard();
+      rankingList.innerHTML = "";
+      controlsDiv.classList.add("hidden");
+    }
+
+    function compartilharWhatsapp() {
+      const message = `Jogo da Velha: ${players.X} (${scores.X}) X ${players.O} (${scores.O})`;
+      const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank");
+    }
+
+    confirmBtn.addEventListener("click", () => {
+      players["X"] = document.getElementById("playerXName").value || "Jogador X";
+      players["O"] = document.getElementById("playerOName").value || "Jogador O";
+      createBoard();
+      document.getElementById("playerNames").classList.add("hidden");
+    });
   </script>
 </body>
 </html>
+
+
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliação do Jogo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
+      text-align: center;
+      padding: 100px 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    a.botao {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background-color: #b10000;
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+    }
+    a.botao:hover {
+      background-color: #9c0202;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="botao" href="https://forms.gle/1YJRWhYBMQzefp9s8" target="_blank">Avalie nosso jogo!</a>
+</body>
+</html>
+
+
